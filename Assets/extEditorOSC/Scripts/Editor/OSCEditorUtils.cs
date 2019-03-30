@@ -58,27 +58,21 @@ namespace extEditorOSC
 			return dictionary;
 		}
 
-		public static Type[] GetTypes(Type type)
+		public static Type[] GetTypes(Type targetType)
 		{
-			var types = new List<Type>();
-			var guids = AssetDatabase.FindAssets("t:" + typeof(MonoScript).Name);
+		    var types = new List<Type>();
 
-			foreach (var guid in guids)
-			{
-				var assetPath = AssetDatabase.GUIDToAssetPath(guid);
+            var assemblyTypes = targetType.Assembly.GetTypes();
+		    foreach (var type in assemblyTypes)
+		    {
+		        if (OSCUtilities.IsSubclassOf(type, targetType)) 
+    		        types.Add(type);
+            }
 
-				var monoScript = AssetDatabase.LoadAssetAtPath<MonoScript>(assetPath);
-				if (monoScript == null) continue;
-
-				var componentType = monoScript.GetClass();
-				if (componentType == null || !OSCUtilities.IsSubclassOf(componentType, type)) continue;
-
-				types.Add(componentType);
-			}
-
-			return types.ToArray();
+		    return types.ToArray();
 		}
 
+        /*
 		public static string GetTypeGUID(Type type)
 		{
 			var guids = AssetDatabase.FindAssets("t:" + typeof(MonoScript).Name);
@@ -109,6 +103,7 @@ namespace extEditorOSC
 
 			return monoScript.GetClass();
 		}
+        */
 
 		public static void ForEach<T>(this IEnumerable<T> enumerable, Action<T> callback)
 		{

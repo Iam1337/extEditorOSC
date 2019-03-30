@@ -66,11 +66,15 @@ namespace extEditorOSC
 				transmitterConfig.RemotePort = 7100;
 				transmitterConfig.UseBundle = false;
 				transmitterConfig.AutoConnect = true;
-				transmitterConfig.LocalPortMode = OSCEditorLocalPortMode.FromRemotePort;
+			    transmitterConfig.LocalHostMode = OSCEditorLocalHostMode.Any;
+			    transmitterConfig.LocalHost = "0.0.0.0";
+                transmitterConfig.LocalPortMode = OSCEditorLocalPortMode.FromRemotePort;
 				transmitterConfig.LocalPort = 7100;
-
-				var receiverConfig = new OSCEditorReceiverConfig();
-				receiverConfig.LocalPort = 7100;
+			    
+                var receiverConfig = new OSCEditorReceiverConfig();
+			    receiverConfig.LocalHostMode = OSCEditorLocalHostMode.Any;
+			    receiverConfig.LocalHost = "0.0.0.0";
+                receiverConfig.LocalPort = 7100;
 				receiverConfig.AutoConnect = true;
 
 				configs.Transmitters.Add(transmitterConfig);
@@ -97,6 +101,8 @@ namespace extEditorOSC
 			foreach (var receiver in _receivers)
 			{
 				var receiverConfig = new OSCEditorReceiverConfig();
+			    receiverConfig.LocalHostMode = receiver.LocalHostMode;
+			    receiverConfig.LocalHost = receiver.LocalHost;
 				receiverConfig.LocalPort = receiver.LocalPort;
 				receiverConfig.AutoConnect = receiver.IsAvailable;
 
@@ -110,6 +116,8 @@ namespace extEditorOSC
 				transmitterConfig.RemotePort = transmitter.RemotePort;
 				transmitterConfig.UseBundle = transmitter.UseBundle;
 				transmitterConfig.AutoConnect = transmitter.IsAvailable;
+			    transmitterConfig.LocalHostMode = transmitter.LocalHostMode;
+			    transmitterConfig.LocalHost = transmitter.LocalHost;
 				transmitterConfig.LocalPortMode = transmitter.LocalPortMode;
 				transmitterConfig.LocalPort = transmitter.LocalPort;
 
@@ -121,9 +129,8 @@ namespace extEditorOSC
 				var componentType = component.GetType();
 
 				var componentConfig = new OSCEditorComponentConfig();
-				componentConfig.Type = componentType.AssemblyQualifiedName;
+				componentConfig.Type = componentType.FullName;
 				componentConfig.Active = component.Active;
-				componentConfig.Guid = OSCEditorUtils.GetTypeGUID(componentType);
 
 				var receiverComponent = component as OSCEditorReceiverComponent;
 				if (receiverComponent != null && receiverComponent.Receiver != null)
@@ -172,7 +179,9 @@ namespace extEditorOSC
 			foreach (var receiverConfig in configs.Receivers)
 			{
 				var receiver = new OSCEditorReceiver();
-				receiver.LocalPort = receiverConfig.LocalPort;
+			    receiver.LocalHostMode = receiverConfig.LocalHostMode;
+			    receiver.LocalHost = receiverConfig.LocalHost;
+                receiver.LocalPort = receiverConfig.LocalPort;
 
 				if (receiverConfig.AutoConnect)
 					receiver.Connect();
@@ -186,6 +195,8 @@ namespace extEditorOSC
 				transmitter.RemoteHost = transmitterConfig.RemoteHost;
 				transmitter.RemotePort = transmitterConfig.RemotePort;
 				transmitter.UseBundle = transmitterConfig.UseBundle;
+			    transmitter.LocalHostMode = transmitterConfig.LocalHostMode;
+			    transmitter.LocalHost = transmitterConfig.LocalHost;
 				transmitter.LocalPortMode = transmitterConfig.LocalPortMode;
 				transmitter.LocalPort = transmitterConfig.LocalPort;
 
@@ -195,34 +206,26 @@ namespace extEditorOSC
 				_transmitters.Add(transmitter);
 			}
 
-			foreach (var componentConfig in configs.Components)
-			{
-				var componentType = OSCEditorUtils.GetTypeByGUID(componentConfig.Guid);
-				if (componentType == null || !componentType.IsSubclassOf(typeof(OSCEditorComponent)))
-				{
-					componentType = typeof(OSCEditorManager).Assembly.GetType(componentConfig.Type);
-					if (componentType == null) continue;
-				}
+		    foreach (var componentConfig in configs.Components)
+		    {
+                var componentType = typeof(OSCEditorManager).Assembly.GetType(componentConfig.Type);
+		        var component = GetComponent(componentType);
+		        if (component == null) continue;
+                
+		        var receiverComponent = component as OSCEditorReceiverComponent;
+		        if (receiverComponent != null)
+		        {
+		            receiverComponent.Receiver = GetEditorReceiver(componentConfig.Index);
+		        }
 
-				var component = GetComponent(componentType);
-				if (component == null) continue;
+		        var transmitterComponent = component as OSCEditorTransmitterComponent;
+		        if (transmitterComponent != null)
+		        {
+		            transmitterComponent.Transmitter = GetEditorTransmitter(componentConfig.Index);
+		        }
 
-				var receiverComponent = component as OSCEditorReceiverComponent;
-				if (receiverComponent != null)
-				{
-					receiverComponent.Receiver = GetEditorReceiver(componentConfig.Index);
-				}
-				else
-				{
-					var transmitterComponent = component as OSCEditorTransmitterComponent;
-					if (transmitterComponent != null)
-					{
-						transmitterComponent.Transmitter = GetEditorTransmitter(componentConfig.Index);
-					}
-				}
-
-				component.Active = componentConfig.Active;
-			}
+		        component.Active = componentConfig.Active;
+		    }
 		}
 
 		public static T GetComponent<T>() where T : OSCEditorComponent

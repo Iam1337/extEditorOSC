@@ -4,6 +4,12 @@
 
 namespace extEditorOSC
 {
+    public enum OSCEditorLocalHostMode
+    {
+        Any, 
+        Custom
+    }
+
 	public enum OSCEditorLocalPortMode
 	{
 		FromRemotePort,

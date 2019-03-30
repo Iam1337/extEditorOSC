@@ -34,9 +34,13 @@ namespace extEditorOSC
 	[Serializable]
 	public class OSCEditorReceiverConfig : OSCEditorBaseConfig
 	{
-		#region Public Vars
+        #region Public Vars
+        
+        public OSCEditorLocalHostMode LocalHostMode;
 
-		public int LocalPort;
+	    public string LocalHost;
+
+        public int LocalPort;
 
 		#endregion
 	}
@@ -52,6 +56,10 @@ namespace extEditorOSC
 
 		public bool UseBundle;
 
+	    public OSCEditorLocalHostMode LocalHostMode;
+
+	    public string LocalHost;
+
 		public OSCEditorLocalPortMode LocalPortMode;
 
 		public int LocalPort;
@@ -63,8 +71,6 @@ namespace extEditorOSC
 	public class OSCEditorComponentConfig
 	{
 		#region Public Vars
-
-		public string Guid;
 
 		public string Type;
 

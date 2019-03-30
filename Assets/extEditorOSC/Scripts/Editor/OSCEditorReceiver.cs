@@ -5,7 +5,7 @@
 using UnityEngine;
 using UnityEngine.Events;
 
-using System.Threading;
+using System;
 using System.Collections.Generic;
 
 using extOSC;
@@ -17,11 +17,48 @@ using extEditorOSC.Core;
 
 namespace extEditorOSC
 {
+    [Serializable]
 	public class OSCEditorReceiver : OSCEditorBase
 	{
-		#region Public Vars
+        #region Public Vars
 
-		public int LocalPort
+	    public OSCEditorLocalHostMode LocalHostMode
+	    {
+	        get { return localHostMode; }
+	        set
+	        {
+	            if (localHostMode == value)
+	                return;
+
+	            localHostMode = value;
+
+	            if (receiverBackend.IsRunning && IsAvailable)
+	            {
+	                Close();
+	                Connect();
+	            }
+	        }
+	    }
+
+	    public string LocalHost
+	    {
+	        get { return RequestLocalHost(); }
+	        set
+	        {
+	            if (localHost == value)
+	                return;
+
+	            localHost = value;
+
+	            if (receiverBackend.IsRunning && IsAvailable)
+	            {
+	                Close();
+	                Connect();
+	            }
+	        }
+	    }
+
+	    public int LocalPort
 		{
 			get { return localPort; }
 			set
@@ -43,7 +80,7 @@ namespace extEditorOSC
 
 		public override bool IsAvailable
 		{
-			get { return receiverBackend.IsAvaible; }
+			get { return receiverBackend.IsAvailable; }
 		}
 
 		public bool IsRunning
@@ -51,11 +88,18 @@ namespace extEditorOSC
 			get { return receiverBackend.IsRunning; }
 		}
 
-		#endregion
+        #endregion
 
-		#region Protected Vars
+        #region Protected Vars
 
-		protected int localPort = 7100;
+	    [SerializeField]
+        protected OSCEditorLocalHostMode localHostMode = OSCEditorLocalHostMode.Any;
+
+	    [SerializeField]
+        protected string localHost;
+
+        [SerializeField]
+        protected int localPort = 7100;
 
 		protected Queue<OSCPacket> packets = new Queue<OSCPacket>();
 
@@ -94,15 +138,16 @@ namespace extEditorOSC
 
 		public override void Connect()
 		{
-			receiverBackend.Connect(localPort);
+			receiverBackend.Connect(RequestLocalHost(), localPort);
 		}
 
-		public override void Close()
-		{
-			receiverBackend.Close();
-		}
+	    public override void Close()
+	    {
+	        if (receiverBackend.IsAvailable)
+	            receiverBackend.Close();
+	    }
 
-		public void Bind(IOSCBind bind)
+	    public void Bind(IOSCBind bind)
 		{
 			if (bind == null) return;
 
@@ -170,11 +215,19 @@ namespace extEditorOSC
 			}
 		}
 
-		#endregion
+        #endregion
 
-		#region Private Methods
+        #region Private Methods
 
-		private void InvokePacket(OSCPacket packet)
+	    private string RequestLocalHost()
+	    {
+	        if (localHostMode == OSCEditorLocalHostMode.Any)
+	            return "0.0.0.0";
+
+	        return localHost;
+	    }
+
+	    private void InvokePacket(OSCPacket packet)
 		{
 			if (packet.IsBundle())
 			{
